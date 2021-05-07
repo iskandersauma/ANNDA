@@ -1,0 +1,60 @@
+clear all;
+clc;
+[Xtr, Ytr,ytr] = LoadBatch('data_batch_1.mat');
+[Xtr2, Ytr2,ytr2] = LoadBatch('data_batch_2.mat');
+% [Xtr3, Ytr3,ytr3] = LoadBatch('data_batch_3.mat');
+% [Xtr4, Ytr4,ytr4] = LoadBatch('data_batch_4.mat');
+% [Xtr5, Ytr5,ytr5] = LoadBatch('data_batch_5.mat');
+[Xte,Yte,yte] = LoadBatch('test_batch.mat');
+
+Xval = Xtr2(:,1:1000);
+Yval = Ytr2(:,1:1000);
+yval = ytr2(:,1:1000);
+
+%pre-processing
+mean_x = mean(Xtr,2);
+Xtr = Xtr - repmat(mean_x,[1,size(Xtr,2)]);
+Xval = Xval - repmat(mean_x,[1,size(Xval,2)]);
+Xte = Xte - repmat(mean_x,[1,size(Xte,2)]);
+
+%parametrar
+m = 50;
+epochs = 10;
+batch_size = 100;
+Eta = [];
+Lambda = [];
+acc_val = [];
+
+pairs = 50;
+eta_max = 0.3;
+eta_min = 0.01;
+lambda_max = 0.1;
+lambda_min = 1e-7;
+
+for i = 1:pairs
+   disp(i)
+   e = log10(eta_min) + (log10(eta_max)-log10(eta_min))*rand(1,1);
+   eta = 10^e;
+   e = log10(lambda_min) + (log10(lambda_max)-log10(lambda_min))*rand(1,1);
+   lambda = 10^e;
+   
+   GDparams = setParams(batch_size, eta, epochs);
+   [W,b,jtrain, jtest, flag] = training(Xtr,Ytr,Xval,Yval,GDparams, lambda,m);
+   if flag == 0
+       Eta = [Eta, eta];
+       Lambda = [Lambda, lambda];
+       acc_val = [acc_val, ComputeAccuracy(Xval, yval, W, b)];
+   end
+end
+
+eta = 0.0622;
+lambda = 1.
+
+figure()
+plot(1:GDparams.epochs,jtrain,'r')
+hold on
+plot(1:GDparams.epochs,jtest,'b')
+hold off
+xlabel('epoch');
+ylabel('loss');
+legend('training loss', 'testing loss')
